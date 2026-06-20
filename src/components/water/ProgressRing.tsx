@@ -172,7 +172,7 @@ export function ProgressRing({ current, target, size = 280, color = '#3b82f6' }:
           x={infoX} y={infoY1}
           textAnchor="middle" dominantBaseline="central"
           fill={color}
-          fontSize="20" fontWeight="bold" fontFamily="system-ui"
+          fontSize="17" fontWeight="bold" fontFamily="system-ui"
         >
           {Math.round(percentage * 100)}%
         </text>
