@@ -2,9 +2,9 @@
 
 import { useSettings } from '@/hooks/useSettings';
 import { useRequestNotificationPermission } from '@/hooks/useReminders';
-import { exportAsCSV, exportAsJSON } from '@/lib/services/exportService';
+import { exportAsCSV, parseCSV } from '@/lib/services/exportService';
 import { waterService } from '@/lib/stores/repository';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 const reminderOptions = [
   { value: 0, label: 'Off' },
@@ -16,9 +16,11 @@ const reminderOptions = [
 export default function SettingsPage() {
   const { settings, updateSettings } = useSettings();
   const { request: requestNotif, granted } = useRequestNotificationPermission();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [goalInput, setGoalInput] = useState(String(settings.dailyGoal.targetMl));
   const [saved, setSaved] = useState('');
   const [exporting, setExporting] = useState(false);
+  const [importMsg, setImportMsg] = useState('');
 
   async function handleGoalSave(e: React.FormEvent) {
     e.preventDefault();
@@ -36,15 +38,30 @@ export default function SettingsPage() {
     await updateSettings({ theme });
   }
 
-  async function handleExport(type: 'csv' | 'json') {
+  async function handleExport() {
     setExporting(true);
-    const [entries, s] = await Promise.all([
-      waterService.getAllEntries(),
-      waterService.getSettings(),
-    ]);
-    if (type === 'csv') exportAsCSV(entries);
-    else exportAsJSON(entries, s);
+    const entries = await waterService.getAllEntries();
+    exportAsCSV(entries);
     setExporting(false);
+  }
+
+  async function handleImportCSV(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportMsg('');
+    try {
+      const text = await file.text();
+      const entries = parseCSV(text);
+      if (entries.length === 0) {
+        setImportMsg('No valid entries found in file.');
+      } else {
+        await waterService.importEntries(entries);
+        setImportMsg(`Imported ${entries.length} entries ✓`);
+      }
+    } catch {
+      setImportMsg('Import failed. Check file format.');
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   async function handleClearAll() {
@@ -170,24 +187,33 @@ export default function SettingsPage() {
 
       <section className="animate-slide-up rounded-2xl bg-white p-4 shadow-sm dark:bg-gray-800">
         <h2 className="mb-3 text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-          Export Data
+          Data
         </h2>
         <div className="flex gap-2">
           <button
-            onClick={() => handleExport('csv')}
+            onClick={handleExport}
             disabled={exporting}
             className="flex-1 rounded-xl bg-water-500 px-3 py-2 text-sm text-white shadow transition-all hover:bg-water-600 active:scale-95 disabled:opacity-50"
           >
             Export CSV
           </button>
           <button
-            onClick={() => handleExport('json')}
-            disabled={exporting}
-            className="flex-1 rounded-xl bg-water-500 px-3 py-2 text-sm text-white shadow transition-all hover:bg-water-600 active:scale-95 disabled:opacity-50"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex-1 rounded-xl border border-water-300 bg-white px-3 py-2 text-sm text-water-700 shadow-sm transition-all hover:bg-water-50 active:scale-95 dark:border-water-700 dark:bg-transparent dark:text-water-400"
           >
-            Export JSON
+            Import CSV
           </button>
         </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv"
+          onChange={handleImportCSV}
+          className="hidden"
+        />
+        {importMsg && (
+          <p className="mt-2 text-xs text-gray-500">{importMsg}</p>
+        )}
       </section>
 
       <section className="animate-slide-up rounded-2xl bg-white p-4 shadow-sm dark:bg-gray-800">

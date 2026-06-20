@@ -179,4 +179,10 @@ export class WaterService {
   async clearAll(): Promise<void> {
     await this.repo.clearAll();
   }
+
+  async importEntries(entries: WaterEntry[]): Promise<void> {
+    for (const entry of entries) {
+      await this.repo.addEntry(entry);
+    }
+  }
 }

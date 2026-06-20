@@ -1,4 +1,4 @@
-import type { WaterEntry, Settings } from '@/lib/types';
+import type { WaterEntry } from '@/lib/types';
 
 function downloadBlob(content: string, filename: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType });
@@ -23,7 +23,38 @@ export function exportAsCSV(entries: WaterEntry[]) {
   downloadBlob(header + rows, `waterlogger-export-${Date.now()}.csv`, 'text/csv');
 }
 
-export function exportAsJSON(entries: WaterEntry[], settings: Settings) {
-  const data = { exportedAt: new Date().toISOString(), entries, settings };
-  downloadBlob(JSON.stringify(data, null, 2), `waterlogger-export-${Date.now()}.json`, 'application/json');
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let cur = '';
+  let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQ && i + 1 < line.length && line[i + 1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
+    else cur += c;
+  }
+  result.push(cur);
+  return result;
+}
+
+export function parseCSV(text: string): WaterEntry[] {
+  const lines = text.split('\n').filter((l) => l.trim());
+  if (lines.length < 2) return [];
+  const entries: WaterEntry[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const v = parseCSVLine(lines[i]);
+    if (v.length < 4) continue;
+    const amount = Number(v[1]);
+    if (!amount || amount <= 0) continue;
+    entries.push({
+      id: v[0] || crypto.randomUUID(),
+      amountMl: amount,
+      timestamp: v[2] || new Date().toISOString(),
+      type: (['water', 'tea', 'coffee', 'juice', 'other'].includes(v[3]) ? v[3] : 'water') as WaterEntry['type'],
+      note: v[4] || undefined,
+    });
+  }
+  return entries;
 }
