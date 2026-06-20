@@ -26,6 +26,7 @@ export default function SettingsPage() {
   const [exporting, setExporting] = useState(false);
   const [importMsg, setImportMsg] = useState('');
   const [customIntervalInput, setCustomIntervalInput] = useState('');
+  const [customIntervalSaved, setCustomIntervalSaved] = useState('');
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [settingsInited, setSettingsInited] = useState(false);
 
@@ -80,6 +81,16 @@ export default function SettingsPage() {
       setImportMsg('Import failed. Check file format.');
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+
+  async function handleCustomIntervalSave(e: React.FormEvent) {
+    e.preventDefault();
+    const num = Number(customIntervalInput);
+    if (num > 0 && num <= 1440) {
+      await updateSettings({ reminderIntervalMinutes: num });
+      setCustomIntervalSaved('Saved ✓');
+      setTimeout(() => setCustomIntervalSaved(''), 2000);
+    }
   }
 
   async function handleClearAll() {
@@ -198,8 +209,7 @@ export default function SettingsPage() {
                   setIsCustomMode(true);
                   const custom = customIntervalInput || String(settings.reminderIntervalMinutes > 0 ? settings.reminderIntervalMinutes : 60);
                   setCustomIntervalInput(custom);
-                  const num = Number(custom);
-                  if (num > 0) updateSettings({ reminderIntervalMinutes: num });
+                  setCustomIntervalSaved('');
                 } else {
                   setIsCustomMode(false);
                   updateSettings({ reminderIntervalMinutes: val });
@@ -212,27 +222,34 @@ export default function SettingsPage() {
               ))}
             </select>
             {isCustomMode && (
-              <div className="mt-2">
+              <form onSubmit={handleCustomIntervalSave} className="mt-2">
                 <label className="mb-1 block text-xs text-gray-400 dark:text-gray-500" htmlFor="custom-interval">
                   Custom interval (minutes)
                 </label>
-                <input
-                  id="custom-interval"
-                  type="number"
-                  min={1}
-                  max={1440}
-                  value={customIntervalInput}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setCustomIntervalInput(v);
-                    const num = Number(v);
-                    if (num > 0 && num <= 1440) {
-                      updateSettings({ reminderIntervalMinutes: num });
-                    }
-                  }}
-                  className="w-full rounded-xl border border-water-200 bg-white px-3 py-2 text-sm text-gray-700 transition-all focus:border-water-400 focus:outline-none focus:ring-2 focus:ring-water-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
-                />
-              </div>
+                <div className="flex gap-2">
+                  <input
+                    id="custom-interval"
+                    type="number"
+                    min={1}
+                    max={1440}
+                    value={customIntervalInput}
+                    onChange={(e) => {
+                      setCustomIntervalInput(e.target.value);
+                      setCustomIntervalSaved('');
+                    }}
+                    className="flex-1 rounded-xl border border-water-200 bg-white px-3 py-2 text-sm text-gray-700 transition-all focus:border-water-400 focus:outline-none focus:ring-2 focus:ring-water-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+                  />
+                  <button
+                    type="submit"
+                    className="rounded-xl bg-water-500 px-4 py-2 text-sm text-white shadow transition-all hover:bg-water-600 active:scale-95"
+                  >
+                    Save
+                  </button>
+                </div>
+                {customIntervalSaved && (
+                  <p className="mt-1 text-xs text-green-500">{customIntervalSaved}</p>
+                )}
+              </form>
             )}
           </div>
         </div>
