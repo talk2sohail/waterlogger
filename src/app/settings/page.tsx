@@ -4,7 +4,8 @@ import { useSettings } from '@/hooks/useSettings';
 import { useRequestNotificationPermission } from '@/hooks/useReminders';
 import { exportAsCSV, parseCSV } from '@/lib/services/exportService';
 import { waterService } from '@/lib/stores/repository';
-import { useState, useRef } from 'react';
+import { DEFAULT_SETTINGS } from '@/lib/types';
+import { useState, useRef, useEffect } from 'react';
 
 const PRESET_INTERVALS = [0, 30, 60, 120];
 
@@ -25,9 +26,19 @@ export default function SettingsPage() {
   const [exporting, setExporting] = useState(false);
   const [importMsg, setImportMsg] = useState('');
   const [customIntervalInput, setCustomIntervalInput] = useState('');
-  const [isCustomMode, setIsCustomMode] = useState(
-    () => !PRESET_INTERVALS.includes(settings.reminderIntervalMinutes) && settings.reminderIntervalMinutes > 0,
-  );
+  const [isCustomMode, setIsCustomMode] = useState(false);
+  const [settingsInited, setSettingsInited] = useState(false);
+
+  useEffect(() => {
+    if (settings !== DEFAULT_SETTINGS && !settingsInited) {
+      setSettingsInited(true);
+      const isCustom = !PRESET_INTERVALS.includes(settings.reminderIntervalMinutes) && settings.reminderIntervalMinutes > 0;
+      if (isCustom) {
+        setIsCustomMode(true);
+        setCustomIntervalInput(String(settings.reminderIntervalMinutes));
+      }
+    }
+  }, [settings, settingsInited]);
 
   async function handleGoalSave(e: React.FormEvent) {
     e.preventDefault();
