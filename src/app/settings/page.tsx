@@ -25,8 +25,9 @@ export default function SettingsPage() {
   const [exporting, setExporting] = useState(false);
   const [importMsg, setImportMsg] = useState('');
   const [customIntervalInput, setCustomIntervalInput] = useState('');
-
-  const isCustom = !PRESET_INTERVALS.includes(settings.reminderIntervalMinutes) && settings.reminderIntervalMinutes > 0;
+  const [isCustomMode, setIsCustomMode] = useState(
+    () => !PRESET_INTERVALS.includes(settings.reminderIntervalMinutes) && settings.reminderIntervalMinutes > 0,
+  );
 
   async function handleGoalSave(e: React.FormEvent) {
     e.preventDefault();
@@ -179,14 +180,15 @@ export default function SettingsPage() {
             </label>
             <select
               id="reminder-interval"
-              value={isCustom ? -1 : settings.reminderIntervalMinutes}
+              value={isCustomMode ? -1 : settings.reminderIntervalMinutes}
               onChange={(e) => {
                 const val = Number(e.target.value);
                 if (val === -1) {
-                  const custom = customIntervalInput || '60';
+                  setIsCustomMode(true);
+                  const custom = customIntervalInput || String(settings.reminderIntervalMinutes > 0 ? settings.reminderIntervalMinutes : 60);
                   setCustomIntervalInput(custom);
-                  updateSettings({ reminderIntervalMinutes: Number(custom) });
                 } else {
+                  setIsCustomMode(false);
                   updateSettings({ reminderIntervalMinutes: val });
                 }
               }}
@@ -196,7 +198,7 @@ export default function SettingsPage() {
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
-            {isCustom && (
+            {isCustomMode && (
               <div className="mt-2">
                 <label className="mb-1 block text-xs text-gray-400 dark:text-gray-500" htmlFor="custom-interval">
                   Custom interval (minutes)
