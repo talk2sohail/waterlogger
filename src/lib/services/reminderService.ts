@@ -54,6 +54,13 @@ export function startReminderService(
 
   async function checkAndNotify() {
     const state = await getState();
+
+    sendSwReminderConfig({
+      intervalMinutes: state.intervalMinutes,
+      targetMl: state.targetMl,
+      currentMl: state.currentMl,
+    });
+
     if (state.intervalMinutes <= 0 || !isPermissionGranted()) return;
 
     const now = new Date();
@@ -63,12 +70,6 @@ export function startReminderService(
 
     if (currentMinute === lastNotifiedMinute) return;
     lastNotifiedMinute = currentMinute;
-
-    sendSwReminderConfig({
-      intervalMinutes: state.intervalMinutes,
-      targetMl: state.targetMl,
-      currentMl: state.currentMl,
-    });
 
     sendReminder(state.currentMl, state.targetMl);
   }
