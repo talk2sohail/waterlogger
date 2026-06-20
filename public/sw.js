@@ -51,9 +51,20 @@ self.addEventListener('notificationclick', (e) => {
 });
 
 self.addEventListener('push', (e) => {
-  const data = e.data?.json() ?? {};
-  self.registration.showNotification(data.title || '💧 WaterLogger', {
-    body: data.body || 'Time to drink water!',
+  let title = '💧 WaterLogger';
+  let body = 'Time to drink water!';
+  try {
+    const data = e.data?.json();
+    if (data) {
+      title = data.title || title;
+      body = data.body || body;
+    }
+  } catch {
+    const text = e.data?.text();
+    if (text) body = text;
+  }
+  self.registration.showNotification(title, {
+    body,
     icon: '/icons/icon.svg',
     tag: 'water-reminder',
   });
@@ -64,7 +75,7 @@ let reminderIntervalId = null;
 
 self.addEventListener('message', (e) => {
   if (e.data?.type === 'REMINDER_CONFIG') {
-    reminderConfig = e.data.config;
+    reminderConfig = { ...reminderConfig, ...e.data.config };
     if (reminderConfig && reminderConfig.intervalMinutes > 0) {
       startReminderTimer();
     } else {
