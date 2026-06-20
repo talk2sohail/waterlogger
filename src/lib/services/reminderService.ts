@@ -21,12 +21,29 @@ export function sendReminder(currentMl: number, targetMl: number) {
     body = `You've had ${currentMl}ml (${percent}%) today. ${remaining}ml to go!`;
   }
 
-  new Notification('💧 WaterLogger Reminder', {
+  const n = new Notification('💧 WaterLogger Reminder', {
     body,
     icon: '/icons/icon.svg',
     silent: false,
     tag: 'water-reminder',
   });
+  n.onclick = () => {
+    window.focus();
+    n.close();
+  };
+}
+
+export function sendSwReminderConfig(config: {
+  intervalMinutes: number;
+  targetMl: number;
+  currentMl: number;
+}) {
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({
+      type: 'REMINDER_CONFIG',
+      config,
+    });
+  }
 }
 
 export function startReminderService(
@@ -47,13 +64,18 @@ export function startReminderService(
     if (currentMinute === lastNotifiedMinute) return;
     lastNotifiedMinute = currentMinute;
 
+    sendSwReminderConfig({
+      intervalMinutes: state.intervalMinutes,
+      targetMl: state.targetMl,
+      currentMl: state.currentMl,
+    });
+
     sendReminder(state.currentMl, state.targetMl);
   }
 
   return {
     start: () => {
       if (intervalId) return;
-      // Check every minute
       intervalId = setInterval(checkAndNotify, 60000);
       checkAndNotify();
     },

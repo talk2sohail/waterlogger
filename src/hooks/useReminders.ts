@@ -1,7 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { startReminderService, requestPermission, isPermissionGranted } from '@/lib/services/reminderService';
+import {
+  startReminderService,
+  requestPermission,
+  isPermissionGranted,
+  sendSwReminderConfig,
+} from '@/lib/services/reminderService';
 import { waterService } from '@/lib/stores/repository';
 
 export function useReminders() {
@@ -32,6 +37,14 @@ export function useReminders() {
     });
 
     service.start();
+
+    waterService.getSettings().then((settings) => {
+      sendSwReminderConfig({
+        intervalMinutes: settings.reminderIntervalMinutes,
+        targetMl: settings.dailyGoal.enabled ? settings.dailyGoal.targetMl : 1,
+        currentMl: 0,
+      });
+    });
 
     return () => {
       service.stop();

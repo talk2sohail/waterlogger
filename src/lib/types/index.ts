@@ -35,7 +35,7 @@ export interface PersistedState {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  dailyGoal: { targetMl: 2000, enabled: true },
+  dailyGoal: { targetMl: 4000, enabled: true },
   unit: 'ml',
   theme: 'system',
   reminderIntervalMinutes: 0,

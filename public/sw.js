@@ -37,3 +37,78 @@ self.addEventListener('fetch', (e) => {
     }),
   );
 });
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      if (windowClients.length > 0) {
+        return windowClients[0].focus();
+      }
+      return clients.openWindow('/');
+    }),
+  );
+});
+
+self.addEventListener('push', (e) => {
+  const data = e.data?.json() ?? {};
+  self.registration.showNotification(data.title || '💧 WaterLogger', {
+    body: data.body || 'Time to drink water!',
+    icon: '/icons/icon.svg',
+    tag: 'water-reminder',
+  });
+});
+
+let reminderConfig = null;
+let reminderIntervalId = null;
+
+self.addEventListener('message', (e) => {
+  if (e.data?.type === 'REMINDER_CONFIG') {
+    reminderConfig = e.data.config;
+    if (reminderConfig && reminderConfig.intervalMinutes > 0) {
+      startReminderTimer();
+    } else {
+      stopReminderTimer();
+    }
+  }
+});
+
+function startReminderTimer() {
+  stopReminderTimer();
+  reminderIntervalId = setInterval(() => {
+    if (!reminderConfig || reminderConfig.intervalMinutes <= 0) return;
+
+    const now = new Date();
+    const currentSlot = Math.floor(
+      (now.getHours() * 60 + now.getMinutes()) / reminderConfig.intervalMinutes,
+    );
+
+    if (currentSlot === reminderConfig.lastNotifiedSlot) return;
+    reminderConfig.lastNotifiedSlot = currentSlot;
+
+    const remaining = Math.max(0, reminderConfig.targetMl - (reminderConfig.currentMl || 0));
+    const percent = reminderConfig.targetMl > 0
+      ? Math.round(((reminderConfig.currentMl || 0) / reminderConfig.targetMl) * 100)
+      : 0;
+
+    let body;
+    if (remaining <= 0) {
+      body = `🎉 You've reached your goal of ${reminderConfig.targetMl}ml! Great job!`;
+    } else {
+      body = `You've had ${reminderConfig.currentMl || 0}ml (${percent}%) today. ${remaining}ml to go!`;
+    }
+
+    self.registration.showNotification('💧 WaterLogger Reminder', {
+      body,
+      icon: '/icons/icon.svg',
+      tag: 'water-reminder',
+    });
+  }, 60000);
+}
+
+function stopReminderTimer() {
+  if (reminderIntervalId) {
+    clearInterval(reminderIntervalId);
+    reminderIntervalId = null;
+  }
+}

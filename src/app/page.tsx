@@ -10,6 +10,7 @@ import { QuickAddButtons } from '@/components/water/QuickAddButtons';
 import { CustomAmountInput } from '@/components/water/CustomAmountInput';
 import { TodayEntries } from '@/components/water/TodayEntries';
 import { BeverageSelector } from '@/components/water/BeverageSelector';
+import { NotificationBanner } from '@/components/layout/NotificationBanner';
 
 export default function HomePage() {
   const { entries, todayTotal, loading, error, addWater, deleteEntry } = useWaterEntries();
@@ -33,6 +34,7 @@ export default function HomePage() {
 
   return (
     <div className="space-y-4">
+      <NotificationBanner />
       <section className="animate-fade-in flex flex-col items-center gap-2">
         <ProgressRing current={todayTotal} target={targetMl} color={beverageColor} />
         {error ? (
