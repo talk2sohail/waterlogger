@@ -187,6 +187,8 @@ export default function SettingsPage() {
                   setIsCustomMode(true);
                   const custom = customIntervalInput || String(settings.reminderIntervalMinutes > 0 ? settings.reminderIntervalMinutes : 60);
                   setCustomIntervalInput(custom);
+                  const num = Number(custom);
+                  if (num > 0) updateSettings({ reminderIntervalMinutes: num });
                 } else {
                   setIsCustomMode(false);
                   updateSettings({ reminderIntervalMinutes: val });
