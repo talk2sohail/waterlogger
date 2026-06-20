@@ -6,11 +6,14 @@ import { exportAsCSV, parseCSV } from '@/lib/services/exportService';
 import { waterService } from '@/lib/stores/repository';
 import { useState, useRef } from 'react';
 
+const PRESET_INTERVALS = [0, 30, 60, 120];
+
 const reminderOptions = [
   { value: 0, label: 'Off' },
   { value: 30, label: 'Every 30 min' },
   { value: 60, label: 'Every hour' },
   { value: 120, label: 'Every 2 hours' },
+  { value: -1, label: 'Custom' },
 ];
 
 export default function SettingsPage() {
@@ -21,6 +24,9 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState('');
   const [exporting, setExporting] = useState(false);
   const [importMsg, setImportMsg] = useState('');
+  const [customIntervalInput, setCustomIntervalInput] = useState('');
+
+  const isCustom = !PRESET_INTERVALS.includes(settings.reminderIntervalMinutes) && settings.reminderIntervalMinutes > 0;
 
   async function handleGoalSave(e: React.FormEvent) {
     e.preventDefault();
@@ -173,14 +179,46 @@ export default function SettingsPage() {
             </label>
             <select
               id="reminder-interval"
-              value={settings.reminderIntervalMinutes}
-              onChange={(e) => updateSettings({ reminderIntervalMinutes: Number(e.target.value) })}
+              value={isCustom ? -1 : settings.reminderIntervalMinutes}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                if (val === -1) {
+                  const custom = customIntervalInput || '60';
+                  setCustomIntervalInput(custom);
+                  updateSettings({ reminderIntervalMinutes: Number(custom) });
+                } else {
+                  updateSettings({ reminderIntervalMinutes: val });
+                }
+              }}
               className="w-full rounded-xl border border-water-200 bg-white px-3 py-2 text-sm text-gray-700 transition-all focus:border-water-400 focus:outline-none focus:ring-2 focus:ring-water-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
             >
               {reminderOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
+            {isCustom && (
+              <div className="mt-2">
+                <label className="mb-1 block text-xs text-gray-400 dark:text-gray-500" htmlFor="custom-interval">
+                  Custom interval (minutes)
+                </label>
+                <input
+                  id="custom-interval"
+                  type="number"
+                  min={1}
+                  max={1440}
+                  value={customIntervalInput}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCustomIntervalInput(v);
+                    const num = Number(v);
+                    if (num > 0 && num <= 1440) {
+                      updateSettings({ reminderIntervalMinutes: num });
+                    }
+                  }}
+                  className="w-full rounded-xl border border-water-200 bg-white px-3 py-2 text-sm text-gray-700 transition-all focus:border-water-400 focus:outline-none focus:ring-2 focus:ring-water-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+                />
+              </div>
+            )}
           </div>
         </div>
       </section>
